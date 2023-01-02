@@ -42,13 +42,16 @@ void loop()
   {
     // increase the degree of asleep
     degreeOfAsleep++;
+    Serial.print("Degree of asleep: ");
+  Serial.println(degreeOfAsleep);
   }
   else
   {
     // turning of the bulb
     digitalWrite(D0, LOW);
-    Serial.println(degreeOfAsleep);
     degreeOfAsleep--;
+    Serial.print("Degree of asleep: ");
+  Serial.println(degreeOfAsleep);
   }
   // check if conformation is grater than our range
   if (degreeOfAsleep > 0)
@@ -65,8 +68,7 @@ void loop()
   {
     degreeOfAsleep = 0;
   }
-  Serial.print("Degree of asleep: ");
-  Serial.println(degreeOfAsleep);
+
   conformation = 0; // after ending loop reset the conformation to 0
   Serial.println("Loop completed");
 }
