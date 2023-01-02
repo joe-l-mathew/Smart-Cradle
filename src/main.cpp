@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 const int voiceLimit = 590;
-const int noOfConformation = 3;
+const int maxDegreeOfConformation = 3;
 
 void setup()
 {
@@ -12,55 +12,50 @@ void setup()
 // value from the sensor
 int voiceValue = 0;
 // conformation value which increment
-int conformation = 0;
+int degreeOfConformation = 0;
 // degree of asleep
 int degreeOfAsleep = 0;
 
 void loop()
 {
   // 10 second for loop completion
-  // loop identifies the number of times the captured value goes beyond the set value in 5 seconds.
+  // loop identifies the number of times the captured value goes beyond the set value in 10 seconds.
   for (int i = 0; i < 100; i++)
   {
     voiceValue = analogRead(A0);
-    // if voice value> voice limit conformation gets incremented by 1
+    // if voice value > voice limit degreeOfConformation gets incremented by 1
     if (voiceValue > voiceLimit)
     {
-      conformation++;
+      degreeOfConformation++;
       Serial.print("Voice breached times : ");
-      Serial.println(conformation);
+      Serial.println(degreeOfConformation);
     }
-    if (conformation > noOfConformation)
+    if (degreeOfConformation > maxDegreeOfConformation)
     {
-      // if the conformation is grater than fos then brake out of the loop
+      // if the degreeOfConformation is grater than fos then brake out of the loop
       break;
     }
     delay(100); // changeble value decrease to improve accuracy
   }
 
-  if (conformation > noOfConformation)
+  if (degreeOfConformation > maxDegreeOfConformation)
   {
-    // increase the degree of asleep
-    degreeOfAsleep++;
+    degreeOfAsleep++; // increase the degree of asleep
     Serial.print("Degree of asleep: ");
-  Serial.println(degreeOfAsleep);
+    Serial.println(degreeOfAsleep);
   }
   else
   {
-    // turning of the bulb
-    digitalWrite(D0, LOW);
-    degreeOfAsleep--;
+    digitalWrite(D0, LOW); // turning of the bulb
+    degreeOfAsleep--;      // decrease the degree of asleep
     Serial.print("Degree of asleep: ");
-  Serial.println(degreeOfAsleep);
+    Serial.println(degreeOfAsleep);
   }
-  // check if conformation is grater than our range
+  // check if degreeOfConformation is grater than our range
   if (degreeOfAsleep > 0)
   {
-
-    // turning on the bulb
-    digitalWrite(D0, HIGH);
-    // delay 1 sec
-    delay(10000);
+    digitalWrite(D0, HIGH); // turning on the bulb
+    delay(10000);           // delay 1 sec
   }
 
   // if degree of asleep goes below zero set it to zero
