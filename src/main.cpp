@@ -19,6 +19,7 @@ unsigned long sendDataPrevMillis = 0;
 bool isCraddleOscilating = false; // craddle status
 bool isBabyAwake = false;         // baby sleep status
 bool signupOK = false;            // Signup Status
+bool manualCradleStatus = false;   //user turning on and off
 
 void detectBabyCry();
 void babyAwake();
@@ -26,6 +27,7 @@ void babyAsleep();
 void turnOnOffCradle(bool isOn);
 void connectWifi();
 bool firebaseStatus();
+void manualCradleStatusFun();
 
 void setup()
 {
@@ -59,6 +61,7 @@ int degreeOfAsleep = 0;       // degree of asleep
 
 void loop()
 {
+  manualCradleStatusFun();
   detectBabyCry(); // increase degreeOfConformation for each cry detection
 
   if (degreeOfConformation > maxDegreeOfConformation)
@@ -69,14 +72,15 @@ void loop()
   {
     babyAsleep();
   }
-  // check if degreeOfConformation is grater than our range 
-  if (degreeOfAsleep > 0)
+  // check if degreeOfConformation is grater than our range
+  if (degreeOfAsleep > 0 || manualCradleStatus)
   {
-    turnOnOffCradle(true);    //turn on the cradle
+    turnOnOffCradle(true); // turn on the cradle
   }
-  //if degreeOfAsleep <= 0  and if cradle is osccilating
-  else if(isCraddleOscilating){
-        turnOnOffCradle(false);   //turn of the cradle
+  // if degreeOfAsleep <= 0  and if cradle is osccilating
+  else if (isCraddleOscilating)
+  {
+    turnOnOffCradle(false); // turn of the cradle
   }
 
   // if degree of asleep goes below zero set it to zero
@@ -149,8 +153,10 @@ void babyAsleep()
     if (degreeOfAsleep >= 0)
     {
       Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", degreeOfAsleep);
-    }else{
-      Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", 0);   //IF -1 set that to 0
+    }
+    else
+    {
+      Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", 0); // IF -1 set that to 0
     }
     Firebase.RTDB.setBool(&fbdo, "smartCradle/isBabyAwake", isBabyAwake);
   }
@@ -163,10 +169,10 @@ void turnOnOffCradle(bool On)
 {
   if (On)
   {
-   
+
     digitalWrite(D0, HIGH);     // turning on the bulb
     isCraddleOscilating = true; // updating status of cradle
-     if (firebaseStatus())
+    if (firebaseStatus())
     {
       Firebase.RTDB.setBool(&fbdo, "smartCradle/isCradleOsccilating", isCraddleOscilating);
     }
@@ -199,3 +205,11 @@ bool firebaseStatus()
     return false;
   }
 }
+
+void manualCradleStatusFun()
+{
+
+  bool bVal;
+    Firebase.RTDB.getBool(&fbdo, F("/smartCradle/onOff"), &bVal);
+    manualCradleStatus = bVal;
+    }
