@@ -67,13 +67,16 @@ void loop()
   }
   else
   {
-    turnOnOffCradle(false);
     babyAsleep();
   }
-  // check if degreeOfConformation is grater than our range
+  // check if degreeOfConformation is grater than our range 
   if (degreeOfAsleep > 0)
   {
-    turnOnOffCradle(true);
+    turnOnOffCradle(true);    //turn on the cradle
+  }
+  //if degreeOfAsleep <= 0  and if cradle is osccilating
+  else if(isCraddleOscilating){
+        turnOnOffCradle(false);   //turn of the cradle
   }
 
   // if degree of asleep goes below zero set it to zero
@@ -145,7 +148,9 @@ void babyAsleep()
   {
     if (degreeOfAsleep >= 0)
     {
-      Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", 0);
+      Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", degreeOfAsleep);
+    }else{
+      Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", 0);   //IF -1 set that to 0
     }
     Firebase.RTDB.setBool(&fbdo, "smartCradle/isBabyAwake", isBabyAwake);
   }
@@ -158,12 +163,13 @@ void turnOnOffCradle(bool On)
 {
   if (On)
   {
-    if (firebaseStatus())
-    {
-      Firebase.RTDB.setBool(&fbdo, "smartCradle/isCradleOsccilating", true);
-    }
+   
     digitalWrite(D0, HIGH);     // turning on the bulb
     isCraddleOscilating = true; // updating status of cradle
+     if (firebaseStatus())
+    {
+      Firebase.RTDB.setBool(&fbdo, "smartCradle/isCradleOsccilating", isCraddleOscilating);
+    }
 
     delay(10000); // delay 10 sec
   }
