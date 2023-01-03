@@ -1,13 +1,29 @@
 #include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <Firebase_ESP_Client.h>
 
-const int voiceLimit = 590;
+const int voiceLimit = 610;
 const int maxDegreeOfConformation = 3;
+
+#define WIFI_SSID "Paikkattu"
+#define WIFI_PASSWORD "youtube357"
 
 void setup()
 {
+  Serial.begin(9600);
   pinMode(D0, OUTPUT);
   pinMode(A0, INPUT);
-  Serial.begin(9600);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.println("Wifi Connecting...");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
 }
 // value from the sensor
 int voiceValue = 0;
@@ -64,6 +80,6 @@ void loop()
     degreeOfAsleep = 0;
   }
 
-  conformation = 0; // after ending loop reset the conformation to 0
+  degreeOfConformation = 0; // after ending loop reset the degree of conformation to zero
   Serial.println("Loop completed");
 }
