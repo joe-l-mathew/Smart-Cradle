@@ -1,3 +1,11 @@
+/*
+Add WIFI_SSID
+ADD WIFI_PASSWORD
+MIC Analog - A0
+MOTOR +VE - D0
+change voiceValue, increasing decreases accuracy always keep arount 600
+*/
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <Firebase_ESP_Client.h>
@@ -21,13 +29,13 @@ bool isBabyAwake = false;         // baby sleep status
 bool signupOK = false;            // Signup Status
 bool manualCradleStatus = false;  // user turning on and off
 
-void detectBabyCry();
-void babyAwake();
-void babyAsleep();
-void turnOnOffCradle(bool isOn);
-void connectWifi();
-bool firebaseStatus();
-void manualCradleStatusFun();
+void detectBabyCry();            // detect baby cry
+void babyAwake();                // if baby is awake
+void babyAsleep();               // if baby is asleep
+void turnOnOffCradle(bool isOn); // to turn on and off cradle movement
+void connectWifi();              // connect wifi
+bool firebaseStatus();           // firebase connection status
+void manualCradleStatusFun();    // get manuel on of data
 
 void setup()
 {
@@ -61,7 +69,6 @@ int degreeOfAsleep = 0;       // degree of asleep
 
 void loop()
 {
-  // manualCradleStatusFun();
   detectBabyCry(); // increase degreeOfConformation for each cry detection
 
   if (degreeOfConformation > maxDegreeOfConformation)
@@ -78,7 +85,7 @@ void loop()
     turnOnOffCradle(true); // turn on the cradle
   }
   // if degreeOfAsleep <= 0  and if cradle is osccilating
-  else if (isCraddleOscilating)
+  else if (isCraddleOscilating && degreeOfAsleep <= 0)
   {
     turnOnOffCradle(false); // turn of the cradle
   }
@@ -113,20 +120,23 @@ void detectBabyCry()
       // if the degreeOfConformation is grater than fos then brake out of the loop
       break;
     }
-    if (i % 20 == 0)
+    if (i % 50 == 0)
     {
       manualCradleStatusFun();
+      // turn on cradle if set on and cradle is currently off
       if (manualCradleStatus && !isCraddleOscilating)
       {
         turnOnOffCradle((true));
       }
-      else if (!manualCradleStatus && isCraddleOscilating)
+      else if (!manualCradleStatus && isCraddleOscilating && degreeOfAsleep <= 0)
       {
         turnOnOffCradle(false);
       }
     }
-
-    delay(100); // changeble value decrease to improve accuracy
+    else
+    {
+      delay(100); // changeble value decrease to improve accuracy
+    }
   }
 }
 
@@ -202,7 +212,7 @@ void turnOnOffCradle(bool On)
     }
   }
 }
-
+// to get update from firebase
 bool firebaseStatus()
 {
   if (Firebase.ready() && signupOK)
@@ -219,6 +229,7 @@ bool firebaseStatus()
   }
 }
 
+// to get RTDB update
 void manualCradleStatusFun()
 {
 
