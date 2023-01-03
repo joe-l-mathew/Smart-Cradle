@@ -19,7 +19,7 @@ unsigned long sendDataPrevMillis = 0;
 bool isCraddleOscilating = false; // craddle status
 bool isBabyAwake = false;         // baby sleep status
 bool signupOK = false;            // Signup Status
-bool manualCradleStatus = false;   //user turning on and off
+bool manualCradleStatus = false;  // user turning on and off
 
 void detectBabyCry();
 void babyAwake();
@@ -61,7 +61,7 @@ int degreeOfAsleep = 0;       // degree of asleep
 
 void loop()
 {
-  manualCradleStatusFun();
+  // manualCradleStatusFun();
   detectBabyCry(); // increase degreeOfConformation for each cry detection
 
   if (degreeOfConformation > maxDegreeOfConformation)
@@ -113,6 +113,19 @@ void detectBabyCry()
       // if the degreeOfConformation is grater than fos then brake out of the loop
       break;
     }
+    if (i % 20 == 0)
+    {
+      manualCradleStatusFun();
+      if (manualCradleStatus && !isCraddleOscilating)
+      {
+        turnOnOffCradle((true));
+      }
+      else if (!manualCradleStatus && isCraddleOscilating)
+      {
+        turnOnOffCradle(false);
+      }
+    }
+
     delay(100); // changeble value decrease to improve accuracy
   }
 }
@@ -210,6 +223,6 @@ void manualCradleStatusFun()
 {
 
   bool bVal;
-    Firebase.RTDB.getBool(&fbdo, F("/smartCradle/onOff"), &bVal);
-    manualCradleStatus = bVal;
-    }
+  Firebase.RTDB.getBool(&fbdo, F("/smartCradle/onOff"), &bVal);
+  manualCradleStatus = bVal;
+}
