@@ -1,44 +1,99 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <Firebase_ESP_Client.h>
-
-const int voiceLimit = 610;
-const int maxDegreeOfConformation = 3;
+#include "addons/TokenHelper.h"
+#include "addons/RTDBHelper.h"
 
 #define WIFI_SSID "Paikkattu"
 #define WIFI_PASSWORD "youtube357"
+#define API_KEY "AIzaSyCYBqDGk7KnavARvPk_2JpCCSUvL8bTRKE"
+#define DATABASE_URL "smart-cradle-d7ce9-default-rtdb.firebaseio.com/"
+
+FirebaseData fbdo;     // firebase data object
+FirebaseConfig config; // firebase config object
+FirebaseAuth auth;     // firebase auth object
+
+const int voiceLimit = 610;            // analog out from mic limit
+const int maxDegreeOfConformation = 3; // conformation limit
+unsigned long sendDataPrevMillis = 0;
+bool isCraddleOscilating = false; // craddle status
+bool isBabyAwake = false;         // baby sleep status
+bool signupOK = false;            // Signup Status
+
+void detectBabyCry();
+void babyAwake();
+void babyAsleep();
+void turnOnOffCradle(bool isOn);
+void connectWifi();
+bool firebaseStatus();
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(9600); // serial begin for print
+  //-- Setting Pinmode --//
   pinMode(D0, OUTPUT);
   pinMode(A0, INPUT);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.println("Wifi Connecting...");
-  while (WiFi.status() != WL_CONNECTED)
+  connectWifi(); // connect wifi
+  // Declaring dbUrl and Api Key
+  config.database_url = DATABASE_URL;
+  config.api_key = API_KEY;
+  // firebase signup
+  /* Sign up */
+  if (Firebase.signUp(&config, &auth, "", ""))
   {
-    Serial.print(".");
-    delay(300);
+    signupOK = true; // signup okey
   }
-  Serial.println();
-  Serial.print("Connected with IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.println();
+  else
+  {
+    Serial.printf("%s\n", config.signer.signupError.message.c_str());
+  }
+  /* Assign the callback function for the long running token generation task */
+  config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
+
+  Firebase.begin(&config, &auth); // Firebase config
+  Firebase.reconnectWiFi(true);
 }
-// value from the sensor
-int voiceValue = 0;
-// conformation value which increment
-int degreeOfConformation = 0;
-// degree of asleep
-int degreeOfAsleep = 0;
+int voiceValue = 0;           // value from the sensor
+int degreeOfConformation = 0; // conformation value which increment
+int degreeOfAsleep = 0;       // degree of asleep
 
 void loop()
+{
+  detectBabyCry(); // increase degreeOfConformation for each cry detection
+
+  if (degreeOfConformation > maxDegreeOfConformation)
+  {
+    babyAwake();
+  }
+  else
+  {
+    turnOnOffCradle(false);
+    babyAsleep();
+  }
+  // check if degreeOfConformation is grater than our range
+  if (degreeOfAsleep > 0)
+  {
+    turnOnOffCradle(true);
+  }
+
+  // if degree of asleep goes below zero set it to zero
+  if (degreeOfAsleep < 0)
+  {
+    degreeOfAsleep = 0; // resetting degree of asleep
+  }
+
+  degreeOfConformation = 0; // after ending loop reset the degree of conformation to zero
+  Serial.println("Loop completed");
+}
+
+// used to detect is baby crying
+void detectBabyCry()
 {
   // 10 second for loop completion
   // loop identifies the number of times the captured value goes beyond the set value in 10 seconds.
   for (int i = 0; i < 100; i++)
   {
-    voiceValue = analogRead(A0);
+    voiceValue = analogRead(A0); // input from mic
     // if voice value > voice limit degreeOfConformation gets incremented by 1
     if (voiceValue > voiceLimit)
     {
@@ -53,33 +108,88 @@ void loop()
     }
     delay(100); // changeble value decrease to improve accuracy
   }
+}
 
-  if (degreeOfConformation > maxDegreeOfConformation)
+void connectWifi()
+{
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD); // Connecting Wifi
+  Serial.println("Wifi Connecting...");
+  while (WiFi.status() != WL_CONNECTED)
   {
-    degreeOfAsleep++; // increase the degree of asleep
-    Serial.print("Degree of asleep: ");
-    Serial.println(degreeOfAsleep);
+    Serial.print("."); // waiting for wifi to connect
+    delay(300);
+  }
+}
+
+// if baby is awake
+void babyAwake()
+{
+  degreeOfAsleep++;     // increase the degree of asleep
+  isBabyAwake = true;   // baby is awake
+  if (firebaseStatus()) // is firebase accesable
+  {
+    Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", degreeOfAsleep);
+    Firebase.RTDB.setBool(&fbdo, "smartCradle/isBabyAwake", isBabyAwake);
+  }
+  Serial.print("Degree of asleep: ");
+  Serial.println(degreeOfAsleep);
+}
+
+// if baby is asleep
+void babyAsleep()
+{
+
+  degreeOfAsleep--;     // decrease the degree of asleep
+  isBabyAwake = false;  // baby starts sleeping
+  if (firebaseStatus()) // is firebase accesable
+  {
+    if (degreeOfAsleep >= 0)
+    {
+      Firebase.RTDB.setInt(&fbdo, "smartCradle/degreeOfAsleep", 0);
+    }
+    Firebase.RTDB.setBool(&fbdo, "smartCradle/isBabyAwake", isBabyAwake);
+  }
+  Serial.print("Degree of asleep: ");
+  Serial.println(degreeOfAsleep);
+}
+
+// cradle on or off
+void turnOnOffCradle(bool On)
+{
+  if (On)
+  {
+    if (firebaseStatus())
+    {
+      Firebase.RTDB.setBool(&fbdo, "smartCradle/isCradleOsccilating", true);
+    }
+    digitalWrite(D0, HIGH);     // turning on the bulb
+    isCraddleOscilating = true; // updating status of cradle
+
+    delay(10000); // delay 10 sec
   }
   else
   {
-    digitalWrite(D0, LOW); // turning of the bulb
-    degreeOfAsleep--;      // decrease the degree of asleep
-    Serial.print("Degree of asleep: ");
-    Serial.println(degreeOfAsleep);
+    digitalWrite(D0, LOW);       // turning of the bulb
+    isCraddleOscilating = false; // updating cradle status
+    if (firebaseStatus())
+    {
+      Firebase.RTDB.setBool(&fbdo, "smartCradle/isCradleOsccilating", isCraddleOscilating);
+    }
   }
-  // check if degreeOfConformation is grater than our range
-  if (degreeOfAsleep > 0)
-  {
-    digitalWrite(D0, HIGH); // turning on the bulb
-    delay(10000);           // delay 1 sec
-  }
+}
 
-  // if degree of asleep goes below zero set it to zero
-  if (degreeOfAsleep < 0)
+bool firebaseStatus()
+{
+  if (Firebase.ready() && signupOK)
   {
-    degreeOfAsleep = 0;
+    Serial.print("Firebase status: ");
+    Serial.println("True");
+    return true;
   }
-
-  degreeOfConformation = 0; // after ending loop reset the degree of conformation to zero
-  Serial.println("Loop completed");
+  else
+  {
+    Serial.print("Firebase status: ");
+    Serial.println("False");
+    return false;
+  }
 }
