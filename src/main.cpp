@@ -12,8 +12,8 @@ change voiceValue, increasing decreases accuracy always keep arount 600
 #include "addons/TokenHelper.h"
 #include "addons/RTDBHelper.h"
 
-#define WIFI_SSID "Paikkattu"
-#define WIFI_PASSWORD "youtube357"
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
 #define API_KEY "AIzaSyCYBqDGk7KnavARvPk_2JpCCSUvL8bTRKE"
 #define DATABASE_URL "smart-cradle-d7ce9-default-rtdb.firebaseio.com/"
 
