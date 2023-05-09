@@ -10,12 +10,13 @@ change voiceValue, increasing decreases accuracy always keep arount 600
 #include <ESP8266WiFi.h>
 #include <Firebase_ESP_Client.h>
 #include "addons/TokenHelper.h"
-#include "addons/RTDBHelper.h"
+#include "addons/RTDBHelper.h" //Real time database
 
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
-#define API_KEY "AIzaSyCYBqDGk7KnavARvPk_2JpCCSUvL8bTRKE"
+#define WIFI_SSID "Madampalli"
+#define WIFI_PASSWORD "sankaranthampi"
+#define API_KEY "AIzaSyCYBqDGk7KnavARvPk_2JpCCSUvL8bTRKE" //key for firebase access
 #define DATABASE_URL "smart-cradle-d7ce9-default-rtdb.firebaseio.com/"
+
 
 FirebaseData fbdo;     // firebase data object
 FirebaseConfig config; // firebase config object
@@ -103,6 +104,7 @@ void loop()
 // used to detect is baby crying
 void detectBabyCry()
 {
+  Serial.println("Detection started");
   // 10 second for loop completion
   // loop identifies the number of times the captured value goes beyond the set value in 10 seconds.
   for (int i = 0; i < 100; i++)
@@ -138,6 +140,7 @@ void detectBabyCry()
       delay(100); // changeble value decrease to improve accuracy
     }
   }
+    Serial.println("Detection Ended");
 }
 
 void connectWifi()
@@ -169,7 +172,7 @@ void babyAwake()
 void babyAsleep()
 {
 
-  degreeOfAsleep--;     // decrease the degree of asleep
+  degreeOfAsleep--;     // decrease the degree of asleep by 1
   isBabyAwake = false;  // baby starts sleeping
   if (firebaseStatus()) // is firebase accesable
   {
@@ -194,6 +197,7 @@ void turnOnOffCradle(bool On)
   {
 
     digitalWrite(D0, HIGH);     // turning on the bulb
+
     isCraddleOscilating = true; // updating status of cradle
     if (firebaseStatus())
     {
@@ -232,8 +236,8 @@ bool firebaseStatus()
 // to get RTDB update
 void manualCradleStatusFun()
 {
-
   bool bVal;
   Firebase.RTDB.getBool(&fbdo, F("/smartCradle/onOff"), &bVal);
   manualCradleStatus = bVal;
+  Serial.println(manualCradleStatus);
 }
