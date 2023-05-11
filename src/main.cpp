@@ -12,10 +12,10 @@ change voiceValue, increasing decreases accuracy always keep arount 600
 #include "addons/TokenHelper.h"
 #include "addons/RTDBHelper.h" //Real time database
 
-#define WIFI_SSID "Madampalli"
-#define WIFI_PASSWORD "sankaranthampi"
-#define API_KEY "AIzaSyCYBqDGk7KnavARvPk_2JpCCSUvL8bTRKE" //key for firebase access
-#define DATABASE_URL "smart-cradle-d7ce9-default-rtdb.firebaseio.com/"
+#define WIFI_SSID "Java"
+#define WIFI_PASSWORD "java@123"
+#define API_KEY "AIzaSyC8ihH3_ZYDO6QnpRLJLiv6DfUemzlTXcc" //key for firebase access
+#define DATABASE_URL "smart-cra-default-rtdb.asia-southeast1.firebasedatabase.app/"
 
 
 FirebaseData fbdo;     // firebase data object
@@ -212,6 +212,7 @@ void turnOnOffCradle(bool On)
     isCraddleOscilating = false; // updating cradle status
     if (firebaseStatus())
     {
+      
       Firebase.RTDB.setBool(&fbdo, "smartCradle/isCradleOsccilating", isCraddleOscilating);
     }
   }
